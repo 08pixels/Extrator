@@ -1,0 +1,118 @@
+package core;
+
+import java_cup.runtime.*;
+import java.util.*;
+
+parser code {:
+
+    private Python3Extractor extractor;
+
+	public Python3Extractor getExtractor() {
+		return extractor;
+	}
+
+	public void setExtractor(Python3Extractor _extractor) {
+		extractor = _extractor;
+	}
+
+:}
+
+action code {:
+
+    private Python3Extractor extractor = new Python3Extractor();
+
+	public Python3Extractor getExtractor() {
+		return extractor;
+	}
+
+	public void setExtractor(Python3Extractor _extractor) {
+		extractor = _extractor;
+	}
+
+:}
+
+// Gammar especification based on
+// https://docs.python.org/3.3/reference/grammar.html
+// https://github.com/bkiers/python3-parser
+
+terminal IF, ELSE, ELIF, FOR, WHILE, EXCEPT, FINALLY, WITH, ASSERT, COMPREHENSION, AND, OR, DOTS, ALPHANUM, LINE;
+
+non terminal expr, expressao, operator;
+
+expr ::= expressao
+		| expressao expr
+		| operator expr
+		| expressao DOTS expr
+		| operator DOTS expr
+		; 
+
+expressao ::= ALPHANUM
+			{:
+				parser.setExtractor(getExtractor());
+			:}
+       		;
+
+operator ::= IF
+			{:
+				getExtractor().addOperator(Python3Symbols.IF);
+				parser.setExtractor(getExtractor());
+			:}
+			|ELIF
+			{:
+				getExtractor().addOperator(Python3Symbols.ELIF);
+				parser.setExtractor(getExtractor());
+			:}
+			|ELSE
+			{:
+				parser.setExtractor(getExtractor());
+			:}
+			|FOR
+			{:
+				getExtractor().addOperator(Python3Symbols.FOR);
+				parser.setExtractor(getExtractor());
+			:}
+			|WHILE
+			{:
+				getExtractor().addOperator(Python3Symbols.WHILE);
+				parser.setExtractor(getExtractor());
+			:}
+			|EXCEPT
+			{:
+				getExtractor().addOperator(Python3Symbols.EXCEPT);
+				parser.setExtractor(getExtractor());
+			:}
+			|FINALLY
+			{:
+				parser.setExtractor(getExtractor());
+			:}
+			|WITH
+			{:
+				getExtractor().addOperator(Python3Symbols.WITH);
+				parser.setExtractor(getExtractor());
+			:}
+			|ASSERT
+			{:
+				getExtractor().addOperator(Python3Symbols.ASSERT);
+				parser.setExtractor(getExtractor());
+			:}
+			|COMPREHENSION
+			{:
+				getExtractor().addOperator(Python3Symbols.COMPREHENSION);
+				parser.setExtractor(getExtractor());
+			:}
+			|AND
+			{:
+				getExtractor().addOperator(Python3Symbols.AND);
+				parser.setExtractor(getExtractor());
+			:}
+			|OR
+			{:
+				getExtractor().addOperator(Python3Symbols.OR);
+				parser.setExtractor(getExtractor());
+			:}
+			|LINE
+			{:
+				getExtractor().addOperator(Python3Symbols.LINE);
+				parser.setExtractor(getExtractor());
+			:}
+			;

@@ -1,0 +1,52 @@
+<project name="extractor" default="all" basedir=".">
+
+	<!-- Specify the directories used in project -->
+	<property name="src"     location="src"/>
+	<property name="core" location="src/core"/>
+	<property name="bin"     location="bin"/>
+	<property name="lib"     location="lib"/>
+
+	<!-- Specify the classpath of the project -->
+    <path id="project.classpath">
+		<fileset dir="${lib}">
+			<include name="**/*.jar"/>
+		</fileset>
+    </path>
+
+	<!-- Cleans -->
+	<target name="clean" description="Cleans">
+		<delete includeemptydirs="true">
+			<fileset dir="${bin}" includes="**/*"/>
+		</delete>
+		<delete file="${core}/Python3Scanner.java"/>
+		<delete file="${core}/Python3Parser.java"/>
+		<delete file="${core}/Python3Symbols.java"/>
+	</target>
+
+	<!-- Generates XParser(cup), XSymbols(cup) and XScanner(jlex) code -->
+	<target name="createCupJLex" 
+		    description="Generates XParser(cup), XSymbols(cup) and XScanner(jlex) code">
+		<delete file="${core}/Python3Scanner.java"/>
+		<delete file="${core}/Python3Parser.java"/>
+		<delete file="${core}/Python3Symbols.java"/>
+
+		<java classname="java_cup.Main">
+			<arg line="-parser Python3Parser -symbols Python3Symbols ${core}/python3parser.cup"/>
+			<classpath refid="project.classpath"/>
+		</java>
+		<java classname="JLex.Main">
+			<arg line="${core}/python3scanner.lex"/>
+			<classpath refid="project.classpath"/>
+		</java>
+
+		<move file="Python3Parser.java" tofile="${core}/Python3Parser.java"/>
+		<move file="Python3Symbols.java" tofile="${core}/Python3Symbols.java"/>
+		<move file="${core}/python3scanner.lex.java" tofile="${core}/Python3Scanner.java"/>
+	</target>
+
+    <!-- ALL -->
+    <target name="all" 
+            depends="createCupJLex" 
+            description="generates the XParser(cup), XSymbols(cup) and XScanner(jlex) code;">
+    </target>
+</project>

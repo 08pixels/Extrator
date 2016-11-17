@@ -1,0 +1,207 @@
+//------------------------------------------------------------------------------
+// JavaCUP - Parser and Symbols table specification for a subset of LaTeX language
+// Created by Alexandre A. Barbosa
+// September 2006
+// Source code: jmparser.cup
+//------------------------------------------------------------------------------
+package jezmath;
+
+import jezmath.JMExpression;
+import jezmath.JMToken;
+
+import java.util.Vector;
+
+parser code {:
+
+	private JMExpression e;
+
+	public JMExpression getExpression() {
+		return e;
+	}
+
+	public void setExpression(JMExpression _e) {
+		e = _e;
+	}
+:}
+
+action code {:
+
+    // import static is not suported
+    public static int SIZE_SMALL   = 0;
+    public static int SIZE_NORMAL  = 1;
+    public static int SIZE_BIG     = 2;
+    public static int SIZE_ALFANUM = 3;
+    public static int SIZE_ITALIC  = 4;
+
+    public static int POSITION_NORMAL      = 0;
+    public static int POSITION_SUPERSCRIPT = 1;
+    public static int POSITION_SUBSCRIPT   = 2;
+    public static int POSITION_NUMERATOR   = 3;
+    public static int POSITION_DENOMINATOR = 4;
+    public static int POSITION_OVER        = 5;
+    public static int POSITION_UNDER       = 6;
+    public static int POSITION_INDEX       = 7;
+    public static int POSITION_RADICAL     = 8;
+
+    private JMExpression e = new JMExpression();
+	private int index = 0;
+
+	private int propertyId = 0;
+	private Vector<JMProperty> properties = new Vector<JMProperty>();
+
+	private void addToken(JMToken _t) {
+		e.addToken(_t);
+	    index++;
+	    parser.setExpression(e);
+    }
+
+    private JMToken createToken(int _id, String _code, int _size) {
+        return new JMToken(_id, index, _code, _size, properties);
+    }
+
+	private void addProperty(JMProperty _p) {
+	    properties.add(_p);
+	    propertyId++;
+    }
+
+	private void removeProperty() {
+        properties.remove(properties.size()-1);
+    }
+
+    private JMProperty createProperty(int _code) {
+        return new JMProperty(propertyId, _code);
+    }
+
+:};
+
+/* Terminais */
+terminal symbol;
+terminal bigsymbol;
+terminal italicsymbol;
+terminal alpha;
+terminal number;
+
+terminal lbrace;
+terminal rbrace;
+terminal lfastener;
+terminal rfastener;
+
+terminal subscript;
+terminal supscript;
+terminal frac;
+terminal sqrt;
+terminal overline;
+terminal underline;
+terminal widehat;
+terminal widetilde;
+terminal overrightarrow;
+terminal overleftarrow;
+
+terminal unknow;
+
+/* Não terminais */
+non terminal expression, terms, actionrbrace;
+non terminal subscriptterm, sublbrace, supscriptterm, suplbrace;
+non terminal fracterm, numlbrace, denlbrace;
+non terminal rootterm, rootlbrace, index;
+non terminal overterm, overlbrace, underterm, underlbrace;
+
+/* Precedências */
+precedence left subscript, supscript;
+precedence left overline, widehat, widetilde, overrightarrow, overleftarrow;
+precedence left underline;
+precedence left symbol, bigsymbol, italicsymbol, alpha, number;
+precedence left lfastener, lbrace, rfastener, rbrace;
+precedence left sqrt, frac;
+
+/* Gramática */
+expression ::= terms expression
+             | terms
+             ;
+
+terms      ::= symbol:t
+               {: addToken(createToken(JMSymbols.symbol, (String)t, SIZE_NORMAL)); :}
+             | bigsymbol:t
+               {: addToken(createToken(JMSymbols.bigsymbol, (String)t, SIZE_BIG)); :}
+             | italicsymbol:t
+               {: addToken(createToken(JMSymbols.italicsymbol, (String)t, SIZE_ITALIC)); :}
+             | alpha:t
+               {: addToken(createToken(JMSymbols.alpha, (String)t, SIZE_ALFANUM)); :}
+             | number:t
+               {: addToken(createToken(JMSymbols.number, (String)t, SIZE_ALFANUM)); :}
+             | subscriptterm
+             | supscriptterm
+             | fracterm
+             | rootterm
+             | overterm
+             | underterm
+             ;
+
+actionrbrace ::= rbrace
+               {: removeProperty(); :}
+             ;
+
+subscriptterm ::= subscript sublbrace expression actionrbrace
+                ;
+
+sublbrace  ::= lbrace
+               {: addProperty(createProperty(POSITION_SUBSCRIPT)); :}
+             ;
+
+supscriptterm ::= supscript suplbrace expression actionrbrace
+                ;
+
+suplbrace  ::= lbrace
+               {: addProperty(createProperty(POSITION_SUPERSCRIPT)); :}
+             ;
+
+fracterm ::= frac numlbrace expression actionrbrace denlbrace expression actionrbrace
+           ;
+
+numlbrace ::= lbrace
+              {: addProperty(createProperty(POSITION_NUMERATOR)); :}
+            ;
+
+denlbrace ::= lbrace
+              {: addProperty(createProperty(POSITION_DENOMINATOR)); :}
+            ;
+
+rootterm ::= sqrt rootlbrace expression actionrbrace
+           | sqrt lfastener index rfastener rootlbrace expression actionrbrace
+           ;
+
+rootlbrace ::= lbrace
+               {: addProperty(createProperty(POSITION_RADICAL));
+                  addToken(createToken(JMSymbols.sqrt, "\u221A", SIZE_NORMAL));
+               :}
+             ;
+
+index    ::= alpha:t
+             {: addProperty(createProperty(POSITION_INDEX));
+                addToken(createToken(JMSymbols.alpha, (String)t, SIZE_ALFANUM)); 
+                removeProperty();
+             :}
+           | number:t
+             {: addProperty(createProperty(POSITION_INDEX));
+                addToken(createToken(JMSymbols.number, (String)t, SIZE_ALFANUM));
+                removeProperty();
+             :}
+           ;
+
+overterm ::= overline overlbrace expression actionrbrace
+           | widehat lbrace expression rbrace
+           | widetilde lbrace expression rbrace
+           | overrightarrow lbrace expression rbrace
+           | overleftarrow lbrace expression rbrace
+           ;
+
+overlbrace ::= lbrace
+               {: addProperty(createProperty(POSITION_OVER)); :}
+             ;
+
+underterm ::= underline underlbrace expression actionrbrace
+           ;
+
+underlbrace ::= lbrace
+                {: addProperty(createProperty(POSITION_UNDER)); :}
+             ;
